@@ -6,7 +6,7 @@
 # microdata laboratory. This section shows how the data was obtained, cleaned, 
 # and how variables were calculated and transformed.
 #
-# Note 2: Starting from line 490, the analysis commands for the database 
+# Note 2: Starting from line 489, the analysis commands for the database 
 # "microdata_prac.csv" are shown, which is provided as supplementary material 
 # for this article.
 # Author: Julio Díaz-José
@@ -30,7 +30,7 @@ library(MASS)
 library (robustbase)
 library(ggpubr)
 #-----------------------------------------------------------------------
-# 1. Data management at the Microdata Laboratory (under permissions and 
+# 1. DATA MANAGEMENT AT THE MICRODATA LABORATORY (under permissions and 
 # following the protocols)
 # ----------------------------------------------------------------------
 # The database is composed by 5 large datasets that we must integrate in a
@@ -89,54 +89,10 @@ BASE_MAIZ_TEC_SOC <- filter(Base_maiz_tec_soc,AA111_02_C == "Maiz grano blanco"|
 head(BASE_MAIZ_TEC_SOC)
 # We get a dataset contining more than 2 million of data
 View(BASE_MAIZ_TEC_SOC)
-#------------------------------------------------------------------------
-#2.ANALYSIS OF THE NATIONAL DATASET
+
 #-------------------------------------------------------------------------------
-# Number of units of analysis planting maize
-
-frecuencias <- table(BASE_MAIZ_TEC_SOC$AA111_02_C)
-cat("Frecuencias del producto (después del filtro): \n")
-print(frecuencias)
-# How many people is planting native seeds?
-# We filter the number of units using native maize seeds
-BASE_MAIZ_NATIVO <- filter(BASE_MAIZ_TEC_SOC,AT111_14_1 == 1)
-BASE_MAIZ_NATIVO
-# Frequency of 'siembra_criolla'
-conteo_criolla <- table(BASE_MAIZ_NATIVO$AT111_14_1)
-#Result
-cat("Conteo de agricultores por tipo de siembra de semilla criolla:\n")
-print(conteo_criolla)
-
-#Individual count
-si_cultivan <- conteo_criolla["1"]
-no_cultivan <- conteo_criolla["2"]
-
-cat("\nNúmero de agricultores que SÍ cultivan semilla criolla (1):", si_cultivan, "\n")
-cat("Número de agricultores que NO cultivan semilla criolla (2):", no_cultivan, "\n")
-
-# Unidades  de producción que utilizan semilla mejorada
-#% de unidades de producción de utiliza semilla mejorada
-#% de unidades de producción que utilizan semilla criolla
-
-# Contar la frecuencia de cada valor
-conteo_criolla <- table(BASE_MAIZ_NATIVO$AT111_14_1)
-
-#Promedio de superficie de las unidades de producción que utilizan semilla criolla
-promedio_superficie_nativa <- BASE_MAIZ_TEC_SOC %>%
-  filter( AT111_14_1== 1) %>%
-  summarise(promedio_superficie_nativa = mean(AA111_03_N, na.rm = TRUE))
-promedio_superficie_nativa
-
-suma_superficie_nativa <- BASE_MAIZ_TEC_SOC %>%
-  filter( AT111_14_1== 1) %>%
-  summarise(suma_superficie_nativa = sum(AA111_03_N, na.rm = TRUE))
-suma_superficie_nativa
-
-
-################################################################################
-#-------------------------------------------------------------------------------
-#  3. HERE WE FILTER THE MUNICIPALITIES OF INTEREST TO GET A REGIONAL
-# DATABASE (27,000 OBSERVATIONS)
+# HERE WE FILTER THE MUNICIPALITIES OF INTEREST TO GET THE REGIONAL
+# DATABASE (28,000 OBSERVATIONS)
 # -----------------------------------------------------------------------------
 
 # We filtered the municipalities within the study region, 
@@ -172,9 +128,8 @@ cat("Número de observaciones después de filtrar por los municipios de interés
 # We check the data containing only the municipalities of interest
 head(base_de_datos_municipios)
 
-################################################################################
 #-------------------------------------------------------------------------------
-# 4. VARIABLES TRANSFORMATION
+# VARIABLES TRANSFORMATION
 # This section outlines the process for calculating new variables to be used in 
 # the cluster analysis. These calculations are necessary to transform the raw 
 # data into meaningful metrics
@@ -452,7 +407,7 @@ print(summary(base_de_datos_municipiosff19$Indice_Intensificacion_Final))
 # Histogram to visualize the index distribution
 hist(base_de_datos_municipiosff19$Indice_Intensificacion_Final,
      main = "Distribución del Índice de Intensificación de productores de maíz ponderado",
-     xlab = "Índice de Intensificación (0 = Menos Intensivo, 1 = Más Intensivo)",
+     xlab = "Índice de Intensificación (0 = Menos Intensified, 1 = Más Intensified)",
      ylab = "Frecuencia",
      breaks = 20, # 
      col = "darkblue",
@@ -484,79 +439,120 @@ write.csv(resultados, "microdata_prac.csv", row.names = FALSE)
 # Using the resulted database we then can perform the cluster analysis to clasiffy 
 # the producers
 #-------------------------------------------------------------------------------
-# 5. WE PERFORM THE CLUSTER ANALYSIS USING THE K-MEANS ALGORITHM
-# The database is provided "microdata_prac.csv" as supplementary material 
+# 2. WE PERFORMED THE CLUSTER ANALYSIS USING THE CLARA ALGORITHM
+# The database  "microdata_prac.csv" is provided as supplementary material 
 #-------------------------------------------------------------------------------
 # The cluster analysis classifies producers based on agricultural practices (through 
-# an index of intensification), 
-# and infrastructure  such as plot area). 
+# an index of intensification, infrastructure such as plot area and social variables
+# like indigenous and consumption patterns.
 # This classification was also guided by expert knowledge ( to determine the number 
 # of clusters) based on the existing maize production systems in the region. 
-
-if(!require(dplyr)){
-  install.packages("dplyr")
-  library(dplyr)
-}
-if(!require(stats)){
-  install.packages("stats")
-  library(stats)
-}
-if(!require(cluster)){
-  install.packages("cluster")
-  library(cluster)
-}
-if(!require(factoextra)){
-  install.packages("factoextra")
-  library(factoextra)
-}
+library(dplyr)
+library(stats)
+library(cluster)
+library(factoextra)
 # Get the data (import before running the following)
 microdata_prac
-# Convert to numeric
+# Convert the factor variables (check)
 datos_clustering_nombres1 <- microdata_prac
-datos_clustering_nombres1$Riego <- as.numeric(as.character(datos_clustering_nombres1$Riego))
-datos_clustering_nombres1$Semilla_mejorada <- as.numeric(as.character(datos_clustering_nombres1$Semilla_mejorada))
-datos_clustering_nombres1$Fertilizantes <- as.numeric(as.character(datos_clustering_nombres1$Fertilizantes))
-datos_clustering_nombres1$Animales_tiro <- as.numeric(as.character(datos_clustering_nombres1$Animales_tiro))
-datos_clustering_nombres1$Herbicidas <- as.numeric(as.character(datos_clustering_nombres1$Herbicidas))
-datos_clustering_nombres1$Insecticidas_fungicidas <- as.numeric(as.character(datos_clustering_nombres1$Insecticidas_fungicidas))
-datos_clustering_nombres1$Tractor <- as.numeric(as.character(datos_clustering_nombres1$Tractor))
-datos_clustering_nombres1$Otra_maquinaria <- as.numeric(as.character(datos_clustering_nombres1$Otra_maquinaria))
-datos_clustering_nombres1$Autoconsumo <- as.numeric(as.character(datos_clustering_nombres1$Autoconsumo))
-datos_clustering_nombres1$Venta <- as.numeric(as.character(datos_clustering_nombres1$Venta))
-datos_clustering_nombres1$Semilla_criolla <- as.numeric(as.character(datos_clustering_nombres1$Semilla_criolla))
-datos_clustering_nombres1$Indigena <- as.numeric(as.character(datos_clustering_nombres1$Indigena))
+datos_clustering_nombres1$Riego <- as.factor(as.character(datos_clustering_nombres1$Riego))
+datos_clustering_nombres1$Semilla_mejorada <- as.factor(as.character(datos_clustering_nombres1$Semilla_mejorada))
+datos_clustering_nombres1$Fertilizantes <- as.factor(as.character(datos_clustering_nombres1$Fertilizantes))
+datos_clustering_nombres1$Animales_tiro <- as.factor(as.character(datos_clustering_nombres1$Animales_tiro))
+datos_clustering_nombres1$Herbicidas <- as.factor(as.character(datos_clustering_nombres1$Herbicidas))
+datos_clustering_nombres1$Insecticidas_fungicidas <- as.factor(as.character(datos_clustering_nombres1$Insecticidas_fungicidas))
+datos_clustering_nombres1$Tractor <- as.factor(as.factor(datos_clustering_nombres1$Tractor))
+datos_clustering_nombres1$Otra_maquinaria <- as.factor(as.character(datos_clustering_nombres1$Otra_maquinaria))
+datos_clustering_nombres1$Autoconsumo <- as.factor(as.character(datos_clustering_nombres1$Autoconsumo))
+datos_clustering_nombres1$Venta <- as.factor(as.factor(datos_clustering_nombres1$Venta))
+datos_clustering_nombres1$Semilla_criolla <- as.factor(as.character(datos_clustering_nombres1$Semilla_criolla))
+datos_clustering_nombres1$Indigena <- as.factor(as.factor(datos_clustering_nombres1$Indigena))
 
 datos_clustering_nombres1
 str(datos_clustering_nombres1)
+#Select data for the analysis
+datos_seleccionado_pos <- datos_clustering_nombres1[, c(1,2,3,6,13,17)]
+str(datos_seleccionado_pos)
 
-# Select the variables for the analysis 
-datos_clusteringa <- datos_clustering_nombres1 [, c("Superficie", "Produccion", "Rendimiento", "Indice","Indigena")]
+#install.packages(c("cluster", "FD", "Rcpp")) 
+library(cluster)
+library(FD)
+datos_seleccionado_pos
 
-# Delete missing values NA)
-datos_clusteringaa <- na.omit(datos_clusteringa)
-datos_clusteringaa
-# Scale numeric variables
-datos_escalados <- scale(datos_clusteringaa)
-datos_escalados
-# Convert to a dataframe
-datos_escalados <- as.data.frame(datos_escalados)
 
-# Apply Clustering K-Means (number of clusters 3- defined by expert knowledge)
-set.seed(123)
-kmeans_model <- kmeans(datos_escalados, centers = 3, nstart = 25)
-kmeans_model
-# Add labels to the original dataset
-tu_base_de_datos_clustered <- datos_clustering_nombres1 %>%
-  slice(as.numeric(rownames(datos_escalados))) %>% # Asegurar el orden correcto si se eliminaron NA
-  mutate(cluster = as.factor(kmeans_model$cluster))
+# Check catergorical variables as factors
+# Continuous variables as numeric.
+str(datos_seleccionado_pos) # Data structure
 
-tu_base_de_datos_clustered
+
+# CLARA will perform the Gower's distance internally
+
+# =========================================================================
+# Optimal number of clusters (previously defined based on expert knowledge)
+# =========================================================================
+
+k_definido_por_expertise <- 3 
+optimal_k <- k_definido_por_expertise
+
+# =========================================================================
+# Apply the CLARA algorithm
+
+
+clara_fit <- clara(
+  x = datos_seleccionado_pos, 
+  k = optimal_k, 
+  metric = "euclidean",
+  samples = 50,         # Number of subsamples to extract
+  sampsize = 1000,      # Size of subsample
+  stand = TRUE,         # Standardize continuous variables
+  trace = 0             # No details
+)
+
+# =========================================================================
+# Results and analysis
+
+
+#  Assigning Cluster
+datos_seleccionado_pos$cluster <- clara_fit$clustering
+cat("\nAsignación de las primeras observaciones a los clusters:\n")
+print(head(datos_seleccionado_pos))
+
+# CLuster size
+cat("\nTamaño de cada cluster:\n")
+print(table(datos_seleccionado_pos$cluster))
+datos_seleccionado_pos$cluster <- clara_fit$clustering
+# Medoids (Representative observations for each cluster)
+cat("\nMedoides (Centros Robustos) de los Clusters:\n")
+print(clara_fit$medoids)
+
+# Descriptive analysis by cluster
+
+# Continuous variables
+aggregate(datos_seleccionado_pos[, c(2,6)], by = list(cluster = clara_fit$clustering), FUN = mean)
+
+# Catergorical variables
+cat("\nDistribución de la Variable Cualitativa Indigena por Cluster:\n")
+print(prop.table(table(datos_seleccionado_pos$cluster, datos_seleccionado_pos$Indigena), margin = 1))
+
+datos_seleccionado_pos
+## Join clusters to the original dataset
+datos_seleccionado_pos$ID <- datos_clustering_nombres1$ID #
+datos_resultado <- data.frame(
+  ID = datos_seleccionado_pos$ID,
+  cluster = clara_fit$clustering
+)
+base_final_completa <- datos_clustering_nombres1 |>
+  left_join(datos_resultado, by = "ID")
+
+base_final_completa
+
+cat("\nTamaño de cada cluster:\n")
+print(table(base_final_completa$cluster))
+
 ##########################################
-
-
 # Perform descriptive statistics for continous variables
 
-estadisticos_cluster <- tu_base_de_datos_clustered %>%
+estadisticos_cluster <- base_final_completa %>%
   group_by(cluster) %>%
   summarise(
     n = n(),
@@ -577,16 +573,29 @@ estadisticos_cluster <- tu_base_de_datos_clustered %>%
 
 estadisticos_cluster
 
+estadisticos_cluster_indice <- base_final_completa %>%
+  group_by(cluster) %>%
+  summarise(
+    n = n(),
+    media_indice = mean(Indice, na.rm = TRUE),
+    sd_indice = sd(Indice, na.rm = TRUE),
+    min_indice = min(Indice, na.rm = TRUE),
+    max_indice = max(Indice, na.rm = TRUE),
+  )
+
+
+estadisticos_cluster_indice
+
 # Percentages by cluster
 #--Indigenous
-Porcentaje_indigenas <-  tu_base_de_datos_clustered %>%
+Porcentaje_indigenas <-  base_final_completa %>%
   group_by(cluster,Indigena) %>% 
   summarise(n = n()) %>%
   mutate(porcentaje = n / sum(n) * 100)
 print(Porcentaje_indigenas)
 
 #--Irrigation
-Porcentaje_riego <-  tu_base_de_datos_clustered %>%
+Porcentaje_riego <-  base_final_completa %>%
   group_by(cluster, Riego) %>% 
   summarise(n = n()) %>%
   mutate(porcentaje = n / sum(n) * 100)
@@ -594,49 +603,49 @@ print(Porcentaje_riego)
 
 
 #-Selfconsumption
-Porcentaje_autoconsumo <-  tu_base_de_datos_clustered %>%
+Porcentaje_autoconsumo <-  base_final_completa %>%
   group_by(cluster, Autoconsumo) %>% 
   summarise(n = n()) %>%
   mutate(porcentaje = n / sum(n) * 100)
 print(Porcentaje_autoconsumo)
 
 #-For sale
-Porcentaje_venta <-  tu_base_de_datos_clustered %>%
+Porcentaje_venta <-  base_final_completa %>%
   group_by(cluster, Venta) %>% 
   summarise(n = n()) %>%
   mutate(porcentaje = n / sum(n) * 100)
 print(Porcentaje_venta)
 
 #-Improved seeds
-Porcentaje_semilla_mejorada <-  tu_base_de_datos_clustered %>%
+Porcentaje_semilla_mejorada <-  base_final_completa %>%
   group_by(cluster, Semilla_mejorada) %>% 
   summarise(n = n()) %>%
   mutate(porcentaje = n / sum(n) * 100)
 print(Porcentaje_semilla_mejorada)
 
 #-Fertilizers
-Porcentaje_fertilizantes <-  tu_base_de_datos_clustered %>%
+Porcentaje_fertilizantes <-  base_final_completa %>%
   group_by(cluster, Fertilizantes) %>% 
   summarise(n = n()) %>%
   mutate(porcentaje = n / sum(n) * 100)
 print(Porcentaje_fertilizantes)
 
 #-Draft animals
-Porcentaje_animales_tiro <-  tu_base_de_datos_clustered %>%
+Porcentaje_animales_tiro <-  base_final_completa %>%
   group_by(cluster, Animales_tiro) %>% 
   summarise(n = n()) %>%
   mutate(porcentaje = n / sum(n) * 100)
 print(Porcentaje_animales_tiro)
 
 #-Herbicides
-Porcentaje_herbicidas <-  tu_base_de_datos_clustered12 %>%
+Porcentaje_herbicidas <-  base_final_completa %>%
   group_by(cluster,Herbicidas) %>% 
   summarise(n = n()) %>%
   mutate(porcentaje = n / sum(n) * 100)
 print(Porcentaje_herbicidas)
 
 #-Insecticides/fungicides
-Porcentaje_insecticidas <-  tu_base_de_datos_clustered %>%
+Porcentaje_insecticidas <-  base_final_completa %>%
   group_by(cluster,Insecticidas_fungicidas) %>% 
   summarise(n = n()) %>%
   mutate(porcentaje = n / sum(n) * 100)
@@ -644,14 +653,14 @@ print(Porcentaje_insecticidas)
 
 #-Use of Tractor
 
-Porcentaje_tractor <-  tu_base_de_datos_clustered %>%
+Porcentaje_tractor <-  base_final_completa %>%
   group_by(cluster,Tractor) %>% 
   summarise(n = n()) %>%
   mutate(porcentaje = n / sum(n) * 100)
 print(Porcentaje_tractor)
 
 #-Use of other machinery
-Porcentaje_otra_maquinaria <-  tu_base_de_datos_clustered %>%
+Porcentaje_otra_maquinaria <-  base_final_completa %>%
   group_by(cluster,Otra_maquinaria) %>% 
   summarise(n = n()) %>%
   mutate(porcentaje = n / sum(n) * 100)
@@ -660,72 +669,72 @@ print(Porcentaje_otra_maquinaria)
 
 #Ccomparing groups by means
 
-ggboxplot(tu_base_de_datos_clustered12, x = "cluster", y = "Superficie", 
+ggboxplot(base_final_completa, x = "cluster", y = "Superficie", 
           color = "cluster", palette = c("#00AFBB", "#E7B800", "#FC4E07"),
           order = c("1", "2", "3"),
           ylab = "Hectáreas", xlab = "Grupo")
-ggboxplot(tu_base_de_datos_clustered12, x = "cluster", y = "Produccion", 
+ggboxplot(base_final_completa, x = "cluster", y = "Produccion", 
           color = "cluster", palette = c("#00AFBB", "#E7B800", "#FC4E07"),
           order = c("1", "2", "3"),
           ylab = "Toneladas", xlab = "Grupo")
 
-ggboxplot(tu_base_de_datos_clustered12, x = "cluster", y = "Indice", 
+ggboxplot(base_final_completa, x = "cluster", y = "Indice", 
           color = "cluster", palette = c("#00AFBB", "#E7B800", "#FC4E07"),
           order = c("1", "2", "3"),
           ylab = "Magnitud", xlab = "Grupo")
 
-ggboxplot(tu_base_de_datos_clustered12, x = "cluster", y = "Rendimiento", 
+ggboxplot(base_final_completa, x = "cluster", y = "Rendimiento", 
           color = "cluster", palette = c("#00AFBB", "#E7B800", "#FC4E07"),
           order = c("1", "2", "3"),
           ylab = "ton/ha", xlab = "Grupo")
-
+base_final_completa$cluster <- as.factor(as.factor(base_final_completa$cluster))
 #a) plot area
-res.aovS <- aov(Superficie ~ cluster, data = tu_base_de_datos_clustered12 )
+res.aovS <- aov(Superficie ~ cluster, data = base_final_completa )
 summary(res.aovS)
 TukeyHSD(res.aovS)
 plot(res.aovS, 2)#
 #Kuskal
-kruskal.test(Superficie ~ cluster, data = tu_base_de_datos_clustered12 )
-pairwise.wilcox.test(tu_base_de_datos_clustered12$Superficie, tu_base_de_datos_clustered12$cluster,
+kruskal.test(Superficie ~ cluster, data = base_final_completa )
+pairwise.wilcox.test(base_final_completa$Superficie, base_final_completa$cluster,
                      p.adjust.method = "BH")
 # b) Production
-res.aovP <- aov(Produccion ~ cluster, data = tu_base_de_datos_clustered12 )
+res.aovP <- aov(Produccion ~ cluster, data = base_final_completa )
 summary(res.aovP)
 TukeyHSD(res.aovP)
 plot(res.aovP, 2)# Kruskal
 #Kuskal
-kruskal.test(Produccion ~ cluster, data = tu_base_de_datos_clustered12 )
-pairwise.wilcox.test(tu_base_de_datos_clustered12$Produccion, tu_base_de_datos_clustered12$cluster,
+kruskal.test(Produccion ~ cluster, data = base_final_completa )
+pairwise.wilcox.test(base_final_completa$Produccion, base_final_completa$cluster,
                      p.adjust.method = "BH")
 # b) Yield
-res.aovR <- aov(Rendimiento ~ cluster, data = tu_base_de_datos_clustered12 )
+res.aovR <- aov(Rendimiento ~ cluster, data = base_final_completa )
 summary(res.aovR)
 TukeyHSD(res.aovR)
 plot(res.aovR, 2)# Kruskal
 #Kuskal
-kruskal.test(Rendimiento ~ cluster, data = tu_base_de_datos_clustered12 )
-pairwise.wilcox.test(tu_base_de_datos_clustered12$Rendimiento, tu_base_de_datos_clustered12$cluster,
+kruskal.test(Rendimiento ~ cluster, data = base_final_completa )
+pairwise.wilcox.test(base_final_completa$Rendimiento, base_final_completa$cluster,
                      p.adjust.method = "BH")
-head(tu_base_de_datos_clustered12)
+head(base_final_completa)
 
 ###############################################################################
 #------------------------------------------------------------------------------
-# 6. PERFORM THE SIMULATION FOR THE ARQUETYPES
+# 3. PERFORM THE SIMULATION FOR THE ARQUETYPES
 #------------------------------------------------------------------------------
 #We assign labels by cluster instead using numbers. This is to perform
 # the analysis of arquetypes.
 
 #
-tu_base_de_datos_clustered <- as.data.frame(tu_base_de_datos_clustered)
-tu_base_de_datos_clustered
-tu_base_de_datos_clustered$cluster <- factor(tu_base_de_datos_clustered$cluster,
+base_final_completa <- as.data.frame(base_final_completa)
+base_final_completa
+base_final_completa$cluster <- factor(base_final_completa$cluster,
                                              levels=c(1,2,3),
-                                             labels = c("Tradicional","Intermedio", "Intensivo"))
-print(tu_base_de_datos_clustered)
-str(tu_base_de_datos_clustered$cluster)
+                                             labels = c("Traditional","Transitional", "Intensified"))
+print(base_final_completa)
+str(base_final_completa$cluster)
 #rename the database
 
-base_productores_cluster <- as.data.frame(tu_base_de_datos_clustered)
+base_productores_cluster <- as.data.frame(base_final_completa)
 head(base_productores_cluster)
 # Install packages
 library(dplyr)
@@ -737,10 +746,10 @@ library(scales) #
 
 base_productores_cluster
 ###############################################
-# 6.1.) Simulation of the economic scenario
+# 3.1.) Simulation of other financial indicators by farmer
 
-# Here we define the distribution for the economic variables and for each unit of 
-# analysis
+# Here we define the distribution for the financial variables and for each unit of 
+# analysis (smallholder farmer)
 
 resultados_simulacion <- base_productores_cluster %>%
   mutate(
@@ -748,53 +757,52 @@ resultados_simulacion <- base_productores_cluster %>%
     
     #Maize price ($/kg).
     precio_venta_kg = case_when(
-      cluster == "Tradicional"   ~ runif(n(), min = 9, max = 12),# Precio de venta en la localidad por ser maíz criollo
-      cluster == "Intermedio"   ~ runif(n(), min = 7, max = 10),# precio de venta en la localidad puede ser maíz híbrido o criollo
-      cluster == "Intensivo" ~ runif(n(), min = 6, max = 9.20) # Precio de venta a intermediarios o en la localidad directo con el consumidor o molino
+      cluster == "Traditional"   ~ runif(n(), min = 9, max = 12),# Precio de venta en la localidad por ser maíz criollo
+      cluster == "Transitional"   ~ runif(n(), min = 7, max = 10),# precio de venta en la localidad puede ser maíz híbrido o criollo
+      cluster == "Intensified" ~ runif(n(), min = 6, max = 9.20) # Precio de venta a intermediarios o en la localidad directo con el consumidor o molino
     ),
     
     # Variable costs ($/ha). +/- 15% higher in the intensive system.
     costo_variable_ha = case_when(
-      cluster == "Tradicional"   ~ runif(n(), min = 13991, max = 18930),
-      cluster == "Intermedio"   ~ runif(n(), min = 9907, max = 13404),
-      cluster == "Intensivo" ~ runif(n(), min = 17777, max = 28110)
+      cluster == "Traditional"   ~ runif(n(), min = 13991, max = 18930),
+      cluster == "Transitional"   ~ runif(n(), min = 9907, max = 13404),
+      cluster == "Intensified" ~ runif(n(), min = 17777, max = 28110)
     ),
     
     # Fixed costs ($/ha).
     costo_fijo_ha = case_when(
-      cluster == "Tradicional"   ~ runif(n(), min = 419, max = 568),
-      cluster == "Intermedio"   ~ runif(n(), min = 510, max = 690),
-      cluster == "Intensivo" ~ runif(n(), min = 901, max = 1220)
+      cluster == "Traditional"   ~ runif(n(), min = 419, max = 568),
+      cluster == "Transitional"   ~ runif(n(), min = 510, max = 690),
+      cluster == "Intensified" ~ runif(n(), min = 901, max = 1220)
     ),
     
     #Income/maize grain/system ($/ha)
     ingreso_maiz_ha = case_when(
-      cluster == "Tradicional"   ~ runif(n(), min = 9600, max = 14400),
-      cluster == "Intermedio"   ~ runif(n(), min = 6300, max = 7245),
-      cluster == "Intensivo" ~ runif(n(), min = 13056, max = 25584)
+      cluster == "Traditional"   ~ runif(n(), min = 9600, max = 14400),
+      cluster == "Transitional"   ~ runif(n(), min = 10000, max = 15000),
+      cluster == "Intensified" ~ runif(n(), min = 13056, max = 19584)
     ),
     
     #Income/byproducts/system ($/ha)
     ingreso_sub_ha = case_when(
-      cluster == "Tradicional"   ~ runif(n(), min = 20480, max = 30721),
-      cluster == "Intermedio"   ~ runif(n(), min = 7920, max = 11880),
-      cluster == "Intensivo" ~ runif(n(), min = 6060, max = 9090)
+      cluster == "Traditional"   ~ runif(n(), min = 20480, max = 30721),
+      cluster == "Transitional"   ~ runif(n(), min = 7920, max = 11880),
+      cluster == "Intensified" ~ runif(n(), min = 6060, max = 9090)
     ),
     
     # Financial results (Income/costs/netprofit)
     ingresos_maiz=(ingreso_maiz_ha * Superficie),
     ingresos_maiz2 =(precio_venta_kg*Produccion),
     ingresos_sub =(ingreso_sub_ha * Superficie),
-    ingresos_totales = (ingresos_maiz + ingresos_sub),
+    ingresos_totales = (ingresos_maiz2 + ingresos_sub),
     costos_totales = (costo_variable_ha + costo_fijo_ha) * Superficie,
     utilidad_neta = ingresos_totales - costos_totales,
-    utilidad_neta_maiz= ingresos_maiz - costos_totales,
+    utilidad_neta_maiz= ingresos_maiz2 - costos_totales,
     
     # Net profit by ha
     utilidad_neta_ha_maiz = utilidad_neta_maiz/Superficie,
     utilidad_neta_ha = utilidad_neta/Superficie
   )
-
 
 head(resultados_simulacion)
 
@@ -810,12 +818,14 @@ resumen_agregado <- resultados_simulacion %>%
     mediana_utilidad = median(utilidad_neta),
     desv_est_utilidad = sd(utilidad_neta),
     productores_con_perdidas = sum(utilidad_neta < 0),
-    porcentaje_con_perdidas = mean(utilidad_neta < 0) * 100
+    porcentaje_con_perdidas = mean(utilidad_neta < 0) * 100,
+    porcentaje_debajo_promedio= mean(utilidad_neta < 1969.084)
   )
 resultados_simulacion
 
 print("--- ANÁLISIS AGREGADO ---")
 print(resumen_agregado)
+
 
 # Visualization Histogram utility by unit of analysis (27,596)
 g1 <- ggplot(resultados_simulacion, aes(x = utilidad_neta)) +
@@ -830,20 +840,37 @@ g1 <- ggplot(resultados_simulacion, aes(x = utilidad_neta)) +
   theme_light()
 g1
 #-----------------------------------------------------------------------
-# Summary by production system 
+# Summary by class (per ha)
 resumen_segmentado <- resultados_simulacion %>%
   group_by(cluster) %>%
   summarise(
     numero_productores = n(),
-    utilidad_promedio_ha = mean(utilidad_neta_ha),
-    mediana_utilidad_ha = median(utilidad_neta_ha),
-    porcentaje_con_perdidas = mean(utilidad_neta < 0) * 100
+    utilidad_promedio_f = mean(utilidad_neta),
+    utilidad_prmedio_f_sd = sd(utilidad_neta),
+    mediana_utilidad_f = median(utilidad_neta),
+    porcentaje_con_perdidas_f = mean(utilidad_neta < 0) * 100,
+    porcentaje_con_perdidas_maiz_f=mean(utilidad_neta_maiz < 0)*100
   ) %>%
-  arrange(desc(utilidad_promedio_ha))
+  arrange(desc(utilidad_promedio_f))
 
 print("--- ANÁLISIS SEGMENTADO ---")
 print(resumen_segmentado)
 
+#Summary by class (per ha)
+resumen_segmentado_ha <- resultados_simulacion %>%
+  group_by(cluster) %>%
+  summarise(
+    numero_productores = n(),
+    utilidad_promedio_ha = mean(utilidad_neta_ha),
+    utilidad_prmedio_ha_sd = sd (utilidad_neta_ha),
+    mediana_utilidad_ha = median(utilidad_neta_ha),
+    porcentaje_con_perdidas_ha = mean(utilidad_neta_ha < 0) * 100,
+    porcentaje_con_perdidas_maiz_ha=mean(utilidad_neta_ha_maiz < 0)*100
+  ) %>%
+  arrange(desc(utilidad_promedio_ha))
+
+print("--- ANÁLISIS SEGMENTADO ---")
+print(resumen_segmentado_ha)
 
 # Boxplot by system
 g2 <- ggplot(resultados_simulacion, aes(x = cluster, y = utilidad_neta_ha, fill = cluster)) +
@@ -861,7 +888,7 @@ g2
 #Ordering the boxplot
 
 # Define the order
-orden_personalizado <- c("Intensivo", "Intermedio", "Tradicional")# 
+orden_personalizado <- c("Intensified", "Transitional", "Traditional")# 
 
 # Convert 'cluster' as a factor using the previous order
 
@@ -917,7 +944,7 @@ datos_long <- categorias1 %>%
 # Check the data
 head(datos_long)
 str(datos_long)
-
+summary(datos_long)
 g3 <- ggplot(datos_long, aes(x = tipo_variable, y = valor, fill = tipo_variable)) +
   geom_boxplot(alpha = 0.7) +
   facet_wrap(~ cluster, scales = "fixed") + # Un panel para cada categoría, con ejes Y libres
@@ -953,17 +980,17 @@ pairwise.wilcox.test(resultados_simulacion$utilidad_neta_ha_maiz, resultados_sim
                      p.adjust.method = "BH")
 
 #------------------------------------------------------------------------------
-# 7. ANALYSIS OF INTENSIFICATION INDEX AND NETPROFIT
+# 4. ANALYSIS OF INTENSIFICATION INDEX AND NETPROFIT
 # -----------------------------------------------------------------------------
 #I want to plot the Intensification Index and Profitability. The graph should
 # show a theoretical curve to demonstrate how, in this type of traditional system, 
 # profitability decreases significantly with greater intensification.
 
 library(ggpubr)
-install.packages("ggExtra")
-install.packages("ggpmisc")
-install.packages("ggside")
-install.packages("ggstatsplot")
+#install.packages("ggExtra")
+#install.packages("ggpmisc")
+#install.packages("ggside")
+#install.packages("ggstatsplot")
 library(ggpmisc)
 library(ggExtra)
 library(ggside)
@@ -1040,9 +1067,9 @@ graf3 <- ggplot(resultados_simulacion, aes(x = Indice, y = Rendimiento)) +
     y = "Yield (t/ha)"
   ) +
   theme_light(base_size = 15)
+graf3
 
-
-graf4 <- ggplot(resultados_simulacion, aes(x = Indice, y = utilidad_neta)) +
+graf4 <- ggplot(resultados_simulacion, aes(x = Indice, y = utilidad_neta_ha)) +
   # Using GAM
   geom_smooth(method = "gam", formula = y ~ s(x), se = FALSE, color = "firebrick", linewidth = 1) +
   labs(
@@ -1057,7 +1084,7 @@ library(patchwork)
 graf2 + graf1+ graf3 + graf4
 
 
-ggplot(resultados_simulacion, aes(x = Indice, y = utilidad)) +
+ggplot(resultados_simulacion, aes(x = Indice, y = utilidad_neta)) +
   # Ajustando un polinomio de segundo grado (una curva)
   geom_smooth(method = "lm", formula = y ~ poly(x, 2), se = TRUE, color = "darkgreen", linewidth = 1) +
   labs(
